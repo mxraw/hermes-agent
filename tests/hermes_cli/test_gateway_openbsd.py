@@ -62,6 +62,18 @@ def test_read_failure_does_not_write():
     assert calls == [["crontab", "-l"]]
 
 
+def test_write_failure_raises():
+    def run(argv, **kwargs):
+        class R:
+            returncode = 0 if argv == ["crontab", "-l"] else 1
+            stdout = ""
+            stderr = "crontab: permission denied\n"
+        return R()
+
+    with pytest.raises(CrontabReadError):
+        install_boot_line(["/usr/local/bin/hermes", "gateway", "run"], "/home/raw/.hermes", "default", run=run)
+
+
 def test_system_scope_message():
     assert system_scope_error(False) is None
     assert system_scope_error(True) == (

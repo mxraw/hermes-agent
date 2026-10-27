@@ -76,7 +76,10 @@ def _read_crontab(run: Callable) -> str:
 
 
 def _write_crontab(text: str, run: Callable) -> None:
-    run(["crontab", "-"], input=text, text=True)
+    result = run(["crontab", "-"], input=text, text=True)
+    if getattr(result, "returncode", 0) != 0:
+        stderr = getattr(result, "stderr", "") or ""
+        raise CrontabReadError(stderr.strip() or "crontab write failed")
 
 
 def install_boot_line(command: list[str], hermes_home: str, profile: str, run: Callable = subprocess.run) -> None:
