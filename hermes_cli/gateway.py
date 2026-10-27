@@ -2045,6 +2045,10 @@ def is_linux() -> bool:
     return sys.platform.startswith("linux")
 
 
+def is_openbsd() -> bool:
+    return sys.platform.startswith("openbsd")
+
+
 from hermes_constants import is_container, is_termux, is_wsl
 
 
@@ -4803,6 +4807,8 @@ def _service_backend(*, windows: bool = True) -> str | None:
         return "launchd"
     if windows and is_windows():
         return "windows"
+    if is_openbsd():
+        return "openbsd"
     return None
 
 
@@ -4814,6 +4820,8 @@ def _service_call(backend: str, verb: str, system: bool | None = False) -> None:
         return getattr(_gw_windows(), verb)()
     if backend == "launchd":
         return globals()[f"launchd_{verb}"]()
+    if backend == "openbsd":
+        return _openbsd_service_call(verb, system)
     fn = globals()[f"systemd_{verb}"]
     return fn() if system is None else fn(system=system)
 
@@ -5188,6 +5196,63 @@ def _install_systemd_from_cli(args, *, force: bool, system: bool, run_as_user) -
         systemd_start(system=system)
 
 
+def _openbsd_profile() -> str:
+    arg = _profile_arg()
+    return arg.split()[-1] if arg else "default"
+
+
+def _openbsd_gateway_command() -> list[str]:
+    from hermes_cli._launchers import installation_command
+    from hermes_cli.config import get_hermes_home
+
+    home = str(get_hermes_home().resolve())
+    return installation_command(
+        PROJECT_ROOT, [*shlex.split(_profile_arg(home)), "gateway", "run"], home=home,
+    )
+
+
+def _openbsd_service_call(verb: str, system: bool | None) -> None:
+    """Start or uninstall the user crontab line. Any other verb is not a supervisor."""
+    from hermes_cli.config import get_hermes_home
+    from hermes_cli.gateway_openbsd import system_scope_error, uninstall_boot_line
+
+    if system and (message := system_scope_error(True)):
+        print(message)
+        sys.exit(1)
+    home = str(get_hermes_home().resolve())
+    profile = _openbsd_profile()
+    if verb == "uninstall":
+        uninstall_boot_line(home, profile)
+        return
+    if verb == "start":
+        _openbsd_start_gateway()
+        return
+    raise RuntimeError(f"OpenBSD gateway has no {verb} supervisor")
+
+
+def _openbsd_start_gateway() -> None:
+    """Background the gateway once. Cron is not a restarter, and neither is this."""
+    from hermes_cli.config import get_hermes_home
+
+    home = get_hermes_home().resolve()
+    log_dir = home / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log = open(log_dir / "gateway.log", "a", encoding="utf-8")
+    subprocess.Popen(_openbsd_gateway_command(), stdout=log, stderr=log, start_new_session=True)
+
+
+def _install_openbsd_from_cli(*, system: bool) -> None:
+    from hermes_cli.config import get_hermes_home
+    from hermes_cli.gateway_openbsd import install_boot_line, system_scope_error
+
+    if message := system_scope_error(system):
+        print(message)
+        sys.exit(1)
+    home = get_hermes_home().resolve()
+    (home / "logs").mkdir(parents=True, exist_ok=True)
+    install_boot_line(_openbsd_gateway_command(), str(home), _openbsd_profile())
+
+
 def _cmd_install(args):
     if is_managed():
         managed_error("install gateway service")
@@ -5217,6 +5282,8 @@ def _cmd_install(args):
             start_on_login=getattr(args, 'start_on_login', None),
             elevated_handoff=getattr(args, 'elevated_handoff', False),
         )
+    elif backend == "openbsd":
+        _install_openbsd_from_cli(system=system)
     else:
         _handle_no_backend("install", wsl=True, s6=True)
     if backend is not None and _is_service_installed():
