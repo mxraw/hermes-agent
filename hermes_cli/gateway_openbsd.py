@@ -14,11 +14,6 @@ from typing import Callable
 
 CRON_TAG = "hermes-gateway"
 CRON_PATH = "/usr/local/bin:/usr/bin:/bin"
-OPENBSD_SYSTEM_SCOPE_MESSAGE = (
-    "gateway install --system is not supported on OpenBSD. "
-    "The gateway belongs to the invoking user. "
-    "Run hermes gateway install without --system."
-)
 
 
 class CrontabReadError(RuntimeError):
@@ -30,11 +25,15 @@ def cron_marker(hermes_home: str, profile: str) -> str:
     return f"# {CRON_TAG} home={hermes_home} profile={profile}"
 
 
-def system_scope_error(system: bool) -> str | None:
-    """The error for ``--system``, or None when the install stays per-user."""
-    if system:
-        return OPENBSD_SYSTEM_SCOPE_MESSAGE
-    return None
+def system_boot_command(username: str, hermes_home: str, command: list[str]) -> list[str]:
+    """Boot the gateway as ``username``, not as root.
+
+    OpenBSD ``su`` has no GNU ``-c``. The command is a shell argument after the
+    login name: ``su -s /bin/sh user -c '...'``. ``-s /bin/sh`` avoids the
+    user's login shell.
+    """
+    inner = "export HERMES_HOME=" + shlex.quote(hermes_home) + "; exec " + " ".join(shlex.quote(part) for part in command)
+    return ["/usr/bin/su", "-s", "/bin/sh", username, "-c", inner]
 
 
 def missing_crontab(returncode: int, stderr: str) -> bool:

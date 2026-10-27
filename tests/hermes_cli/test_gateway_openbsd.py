@@ -10,7 +10,6 @@ from hermes_cli.gateway_openbsd import (
     missing_crontab,
     remove_marked_lines,
     render_cron_line,
-    system_scope_error,
 )
 
 
@@ -74,13 +73,23 @@ def test_write_failure_raises():
         install_boot_line(["/usr/local/bin/hermes", "gateway", "run"], "/home/raw/.hermes", "default", run=run)
 
 
-def test_system_scope_message():
-    assert system_scope_error(False) is None
-    assert system_scope_error(True) == (
-        "gateway install --system is not supported on OpenBSD. "
-        "The gateway belongs to the invoking user. "
-        "Run hermes gateway install without --system."
-    )
+def test_system_boot_command_runs_as_named_user():
+    from hermes_cli.gateway_openbsd import system_boot_command
+    cmd = system_boot_command("raw", "/home/raw/.hermes", ["/usr/local/bin/hermes", "gateway", "run"])
+    assert cmd[:4] == ["/usr/bin/su", "-s", "/bin/sh", "raw"]
+    assert cmd[4] == "-c"
+    assert "HERMES_HOME=/home/raw/.hermes" in cmd[5]
+    assert "/usr/local/bin/hermes" in cmd[5]
+
+
+@pytest.mark.platforms("openbsd")
+def test_start_does_not_spawn_when_pid_is_alive(monkeypatch):
+    import hermes_cli.gateway as gw
+    spawned = []
+    monkeypatch.setattr(gw.subprocess, "Popen", lambda *args, **kwargs: spawned.append(args))
+    monkeypatch.setattr("gateway.status.get_running_pid", lambda *args, **kwargs: 4242)
+    gw._openbsd_start_gateway()
+    assert spawned == []
 
 
 @pytest.mark.platforms("openbsd")
