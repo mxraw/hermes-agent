@@ -69,3 +69,10 @@ def test_system_scope_message():
         "The gateway belongs to the invoking user. "
         "Run hermes gateway install without --system."
     )
+
+
+@pytest.mark.platforms("openbsd")
+def test_service_backend_is_openbsd(monkeypatch):
+    from hermes_cli.gateway import _service_backend, is_openbsd
+    assert is_openbsd()
+    assert _service_backend() == "openbsd"
