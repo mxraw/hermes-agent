@@ -3,6 +3,9 @@ COMMENT =		self-improving AI agent
 DISTNAME =		hermes-agent-0.0.0
 PKGNAME =		hermes-agent-0.0.0
 
+# First package omitted the share tree. Same DISTNAME, different contents.
+REVISION =		0
+
 CATEGORIES =		misc
 
 HOMEPAGE =		https://github.com/NousResearch/hermes-agent
