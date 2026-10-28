@@ -21,6 +21,22 @@ MODPY_PYBUILD =		setuptools
 # setup.py refuses wheel builds except the Nix packaging path.
 MAKE_ENV +=		HERMES_NIX_BUILD=1
 
+SHARE_DIRS =		skills optional-skills plugins locales optional-mcps
+
+post-install:
+	${INSTALL_DATA_DIR} ${PREFIX}/share/hermes-agent
+	${INSTALL_DATA_DIR} ${PREFIX}/libexec/hermes-agent
+.for d in ${SHARE_DIRS}
+	cp -R ${WRKSRC}/${d} ${PREFIX}/share/hermes-agent/
+	find ${PREFIX}/share/hermes-agent/${d} -name __pycache__ -type d -prune -exec rm -rf {} +
+.endfor
+.for b in hermes hermes-agent hermes-acp
+	mv ${PREFIX}/bin/${b} ${PREFIX}/libexec/hermes-agent/${b}
+.endfor
+	${INSTALL_SCRIPT} ${FILESDIR}/hermes.sh ${PREFIX}/bin/hermes
+	${INSTALL_SCRIPT} ${FILESDIR}/hermes.sh ${PREFIX}/bin/hermes-agent
+	${INSTALL_SCRIPT} ${FILESDIR}/hermes.sh ${PREFIX}/bin/hermes-acp
+
 # Local terminal commands are bash, not ksh. bash is not in base.
 RUN_DEPENDS =		shells/bash \
 			devel/py-certifi \
