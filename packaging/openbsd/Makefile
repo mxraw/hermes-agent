@@ -71,9 +71,10 @@ RUN_DEPENDS =		shells/bash \
 			www/py-urllib3 \
 			www/py-uvicorn
 
-# devel/py-pydantic is 2.12.5 (pydantic-core 2.41.5), which Hermes records
-# as segfaulting on the OpenAI path. 2.14.1 does not build on this Python
-# yet. Left out until a core exists. The CLI help path did not import it.
+# Use the release tree's py3-pydantic (2.12.5 / core 2.41.5), pulled in by
+# py3-openai. Hermes pins 2.14.1 because that core has segfaulted on the
+# Responses path. 8.0 is frozen, and this port does not replace an existing
+# port. A model call gets the tree's pydantic; that crash is accepted.
 
 NO_TEST =		Yes
 
