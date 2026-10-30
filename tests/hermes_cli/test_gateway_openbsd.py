@@ -14,18 +14,18 @@ from hermes_cli.gateway_openbsd import (
 
 
 def test_render_cron_line_does_not_use_bare_hermes():
-    line = render_cron_line(["/home/raw/hermes-agent/.venv/bin/hermes", "gateway", "run"],
-                            "/home/raw/.hermes", "default")
+    line = render_cron_line(["/usr/local/bin/hermes", "gateway", "run"],
+                            "/home/alice/.hermes", "default")
     assert line.startswith("@reboot ")
     assert "PATH=/usr/local/bin:/usr/bin:/bin:" in line
-    assert "/home/raw/hermes-agent/.venv/bin/hermes" in line
+    assert "/usr/local/bin/hermes" in line
     assert "@reboot hermes " not in line
-    assert line.endswith(">> /home/raw/.hermes/logs/gateway.log 2>&1 # hermes-gateway home=/home/raw/.hermes profile=default")
+    assert line.endswith(">> /home/alice/.hermes/logs/gateway.log 2>&1 # hermes-gateway home=/home/alice/.hermes profile=default")
 
 
 def test_merge_replaces_existing_marker():
-    marker = cron_marker("/home/raw/.hermes", "default")
-    existing = "0 * * * * echo keep\n@reboot old # hermes-gateway home=/home/raw/.hermes profile=default\n"
+    marker = cron_marker("/home/alice/.hermes", "default")
+    existing = "0 * * * * echo keep\n@reboot old # hermes-gateway home=/home/alice/.hermes profile=default\n"
     merged = merge_crontab(existing, "@reboot new " + marker, marker)
     assert merged.count("@reboot") == 1
     assert "echo keep" in merged
@@ -33,14 +33,14 @@ def test_merge_replaces_existing_marker():
 
 
 def test_remove_marked_line_keeps_unrelated():
-    marker = cron_marker("/home/raw/.hermes", "default")
+    marker = cron_marker("/home/alice/.hermes", "default")
     existing = "0 * * * * echo keep\n@reboot gone " + marker + "\n"
     assert remove_marked_lines(existing, marker).strip() == "0 * * * * echo keep"
 
 
 def test_missing_crontab_is_only_that_stderr():
-    assert missing_crontab(1, "crontab: no crontab for raw\n")
-    assert not missing_crontab(1, "crontab: you (raw) are not allowed to use this program\n")
+    assert missing_crontab(1, "crontab: no crontab for alice\n")
+    assert not missing_crontab(1, "crontab: you (alice) are not allowed to use this program\n")
     assert not missing_crontab(0, "")
 
 
@@ -53,11 +53,11 @@ def test_read_failure_does_not_write():
         class R:
             returncode = 1
             stdout = ""
-            stderr = "crontab: you (raw) are not allowed to use this program\n"
+            stderr = "crontab: you (alice) are not allowed to use this program\n"
         return R()
 
     with pytest.raises(CrontabReadError):
-        install_boot_line(["/usr/local/bin/hermes", "gateway", "run"], "/home/raw/.hermes", "default", run=run)
+        install_boot_line(["/usr/local/bin/hermes", "gateway", "run"], "/home/alice/.hermes", "default", run=run)
     assert calls == [["crontab", "-l"]]
 
 
@@ -70,15 +70,15 @@ def test_write_failure_raises():
         return R()
 
     with pytest.raises(CrontabReadError):
-        install_boot_line(["/usr/local/bin/hermes", "gateway", "run"], "/home/raw/.hermes", "default", run=run)
+        install_boot_line(["/usr/local/bin/hermes", "gateway", "run"], "/home/alice/.hermes", "default", run=run)
 
 
 def test_system_boot_command_runs_as_named_user():
     from hermes_cli.gateway_openbsd import system_boot_command
-    cmd = system_boot_command("raw", "/home/raw/.hermes", ["/usr/local/bin/hermes", "gateway", "run"])
-    assert cmd[:4] == ["/usr/bin/su", "-s", "/bin/sh", "raw"]
+    cmd = system_boot_command("alice", "/home/alice/.hermes", ["/usr/local/bin/hermes", "gateway", "run"])
+    assert cmd[:4] == ["/usr/bin/su", "-s", "/bin/sh", "alice"]
     assert cmd[4] == "-c"
-    assert "HERMES_HOME=/home/raw/.hermes" in cmd[5]
+    assert "HERMES_HOME=/home/alice/.hermes" in cmd[5]
     assert "/usr/local/bin/hermes" in cmd[5]
 
 
