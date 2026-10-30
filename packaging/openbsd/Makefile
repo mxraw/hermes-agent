@@ -13,8 +13,10 @@ HOMEPAGE =		https://github.com/NousResearch/hermes-agent
 # MIT
 PERMIT_PACKAGE =	Yes
 
-# Local distfile of the OpenBSD branch. Not an upstream release.
-SITES =			file:///home/raw/distfiles/
+# Not an upstream release. Put ${DISTNAME}.tar.gz in ${DISTDIR}
+# before building. Do not point SITES at a home directory.
+FETCH_MANUALLY += "${DISTNAME}.tar.gz must be placed in ${DISTDIR}."
+FETCH_MANUALLY += "It is a tarball of this branch, not a published release."
 
 MODULES =		lang/python
 
