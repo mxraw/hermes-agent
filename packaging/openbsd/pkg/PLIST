@@ -8006,6 +8006,9 @@ libexec/hermes-agent/
 libexec/hermes-agent/hermes
 libexec/hermes-agent/hermes-acp
 libexec/hermes-agent/hermes-agent
+share/examples/
+share/examples/hermes-agent/
+share/examples/hermes-agent/pf.conf
 share/hermes-agent/
 share/hermes-agent/locales/
 share/hermes-agent/locales/_keys.desktop.json

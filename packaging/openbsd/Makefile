@@ -4,7 +4,7 @@ DISTNAME =		hermes-agent-0.0.0
 PKGNAME =		hermes-agent-0.0.0
 
 # First package omitted the share tree. Same DISTNAME, different contents.
-REVISION =		1
+REVISION =		2
 
 CATEGORIES =		misc
 
@@ -41,6 +41,8 @@ post-install:
 	${INSTALL_SCRIPT} ${FILESDIR}/hermes.sh ${PREFIX}/bin/hermes
 	${INSTALL_SCRIPT} ${FILESDIR}/hermes.sh ${PREFIX}/bin/hermes-agent
 	${INSTALL_SCRIPT} ${FILESDIR}/hermes.sh ${PREFIX}/bin/hermes-acp
+	${INSTALL_DATA_DIR} ${PREFIX}/share/examples/hermes-agent
+	${INSTALL_DATA} ${FILESDIR}/pf.conf ${PREFIX}/share/examples/hermes-agent/pf.conf
 
 # Local terminal commands are bash, not ksh. bash is not in base.
 RUN_DEPENDS =		shells/bash \
