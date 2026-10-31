@@ -4,7 +4,7 @@ DISTNAME =		hermes-agent-0.0.0
 PKGNAME =		hermes-agent-0.0.0
 
 # First package omitted the share tree. Same DISTNAME, different contents.
-REVISION =		0
+REVISION =		1
 
 CATEGORIES =		misc
 
@@ -44,6 +44,7 @@ post-install:
 
 # Local terminal commands are bash, not ksh. bash is not in base.
 RUN_DEPENDS =		shells/bash \
+			security/py-scrypt \
 			devel/py-certifi \
 			devel/py-openai \
 			devel/py-pathspec \
