@@ -15,8 +15,10 @@ PERMIT_PACKAGE =	Yes
 
 # Not an upstream release. Put ${DISTNAME}.tar.gz in ${DISTDIR}
 # before building. Do not point SITES at a home directory.
+# The tarball is this branch plus a prebuilt hermes_cli/web_dist. That
+# directory is a build product, gitignored upstream, and is not committed here.
 FETCH_MANUALLY += "${DISTNAME}.tar.gz must be placed in ${DISTDIR}."
-FETCH_MANUALLY += "It is a tarball of this branch, not a published release."
+FETCH_MANUALLY += "It is a tarball of this branch plus hermes_cli/web_dist, not a published release."
 
 MODULES =		lang/python
 
@@ -43,9 +45,8 @@ post-install:
 	${INSTALL_SCRIPT} ${FILESDIR}/hermes.sh ${PREFIX}/bin/hermes-acp
 	${INSTALL_DATA_DIR} ${PREFIX}/share/examples/hermes-agent
 	${INSTALL_DATA} ${FILESDIR}/pf.conf ${PREFIX}/share/examples/hermes-agent/pf.conf
-	# Dashboard SPA. OpenBSD has no native rolldown/lightningcss build, so this
-	# tree ships a prebuilt hermes_cli/web_dist. The server reads it next to
-	# the installed hermes_cli package.
+	# Dashboard SPA. The distfile carries a prebuilt hermes_cli/web_dist; the
+	# server reads that directory next to the installed hermes_cli package.
 	${INSTALL_DATA_DIR} ${PREFIX}/lib/python${MODPY_VERSION}/site-packages/hermes_cli/web_dist
 	cp -R ${WRKSRC}/hermes_cli/web_dist/. ${PREFIX}/lib/python${MODPY_VERSION}/site-packages/hermes_cli/web_dist/
 
