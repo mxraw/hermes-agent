@@ -1,0 +1,12 @@
+The messaging gateway makes outbound connections. It does not need an
+inbound pf rule for Telegram, Discord, Slack, or the other polling adapters.
+
+The dashboard is separate. If you start it with --host 0.0.0.0, inbound TCP
+9119 must be allowed. An example ruleset, based on /etc/examples/pf.conf,
+is installed at
+
+	${PREFIX}/share/examples/hermes-agent/pf.conf
+
+This package does not replace /etc/pf.conf. Merge that example yourself,
+check it with `pfctl -nf`, then load it with `pfctl -f`. A hosting provider
+firewall can still drop 9119 after pf allows it.
