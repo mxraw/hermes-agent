@@ -4,7 +4,7 @@ DISTNAME =		hermes-agent-0.0.0
 PKGNAME =		hermes-agent-0.0.0
 
 # First package omitted the share tree. Same DISTNAME, different contents.
-REVISION =		2
+REVISION =		3
 
 CATEGORIES =		misc
 
@@ -43,6 +43,11 @@ post-install:
 	${INSTALL_SCRIPT} ${FILESDIR}/hermes.sh ${PREFIX}/bin/hermes-acp
 	${INSTALL_DATA_DIR} ${PREFIX}/share/examples/hermes-agent
 	${INSTALL_DATA} ${FILESDIR}/pf.conf ${PREFIX}/share/examples/hermes-agent/pf.conf
+	# Dashboard SPA. OpenBSD has no native rolldown/lightningcss build, so this
+	# tree ships a prebuilt hermes_cli/web_dist. The server reads it next to
+	# the installed hermes_cli package.
+	${INSTALL_DATA_DIR} ${PREFIX}/lib/python${MODPY_VERSION}/site-packages/hermes_cli/web_dist
+	cp -R ${WRKSRC}/hermes_cli/web_dist/. ${PREFIX}/lib/python${MODPY_VERSION}/site-packages/hermes_cli/web_dist/
 
 # Local terminal commands are bash, not ksh. bash is not in base.
 RUN_DEPENDS =		shells/bash \
