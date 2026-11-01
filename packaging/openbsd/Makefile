@@ -4,7 +4,7 @@ DISTNAME =		hermes-agent-0.0.0
 PKGNAME =		hermes-agent-0.0.0
 
 # First package omitted the share tree. Same DISTNAME, different contents.
-REVISION =		3
+REVISION =		4
 
 CATEGORIES =		misc
 
@@ -15,10 +15,11 @@ PERMIT_PACKAGE =	Yes
 
 # Not an upstream release. Put ${DISTNAME}.tar.gz in ${DISTDIR}
 # before building. Do not point SITES at a home directory.
-# The tarball is this branch plus a prebuilt hermes_cli/web_dist. That
-# directory is a build product, gitignored upstream, and is not committed here.
+# The tarball is this branch plus prebuilt hermes_cli/web_dist and
+# hermes_cli/tui_dist. Those directories are build products, gitignored
+# upstream, and are not committed here.
 FETCH_MANUALLY += "${DISTNAME}.tar.gz must be placed in ${DISTDIR}."
-FETCH_MANUALLY += "It is a tarball of this branch plus hermes_cli/web_dist, not a published release."
+FETCH_MANUALLY += "It is a tarball of this branch plus hermes_cli/web_dist and hermes_cli/tui_dist, not a published release."
 
 MODULES =		lang/python
 
@@ -45,13 +46,16 @@ post-install:
 	${INSTALL_SCRIPT} ${FILESDIR}/hermes.sh ${PREFIX}/bin/hermes-acp
 	${INSTALL_DATA_DIR} ${PREFIX}/share/examples/hermes-agent
 	${INSTALL_DATA} ${FILESDIR}/pf.conf ${PREFIX}/share/examples/hermes-agent/pf.conf
-	# Dashboard SPA. The distfile carries a prebuilt hermes_cli/web_dist; the
-	# server reads that directory next to the installed hermes_cli package.
+	# Dashboard SPA and embedded terminal. The distfile carries prebuilt
+	# hermes_cli/web_dist and hermes_cli/tui_dist. Chat runs the TUI with Node.
 	${INSTALL_DATA_DIR} ${PREFIX}/lib/python${MODPY_VERSION}/site-packages/hermes_cli/web_dist
 	cp -R ${WRKSRC}/hermes_cli/web_dist/. ${PREFIX}/lib/python${MODPY_VERSION}/site-packages/hermes_cli/web_dist/
+	${INSTALL_DATA_DIR} ${PREFIX}/lib/python${MODPY_VERSION}/site-packages/hermes_cli/tui_dist
+	cp -R ${WRKSRC}/hermes_cli/tui_dist/. ${PREFIX}/lib/python${MODPY_VERSION}/site-packages/hermes_cli/tui_dist/
 
 # Local terminal commands are bash, not ksh. bash is not in base.
 RUN_DEPENDS =		shells/bash \
+			lang/node \
 			security/py-scrypt \
 			devel/py-certifi \
 			devel/py-openai \
