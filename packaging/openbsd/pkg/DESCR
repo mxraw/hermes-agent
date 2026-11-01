@@ -1,0 +1,7 @@
+Hermes Agent is a per-user AI agent: a CLI, a gateway, and local
+terminal tools. On OpenBSD the gateway is started at boot from that
+user's crontab. A root `gateway install --system` writes a boot line
+that su's to the invoking user. It does not run as root.
+
+Desktop, browser automation, voice, and container sandboxes are not
+part of this port.
