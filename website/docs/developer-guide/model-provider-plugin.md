@@ -764,10 +764,14 @@ apply:
   pip-installed one. A pip package can add a genuinely new provider, but
   cannot silently hijack a first-party provider name.
 
-Targets that require arguments (a general plugin's `register(ctx)`) are
-skipped by the provider scan — they belong to the `PluginManager`. A broken
-entry point is isolated — it is logged at warning level and skipped, and never
-blocks discovery of the other providers.
+The scan does not import a target it can see is not a model provider. The
+group is shared with memory providers and every other plugin, and loading one
+just to notice that `register(ctx)` takes an argument imports that plugin in
+every process that resolves providers. Classification reads the module source
+(the same markers the PluginManager uses) and skips the load. An unreadable
+target still loads, and a callable that then turns out to require arguments is
+left to the PluginManager. A broken entry point is isolated — it is logged at
+warning level and skipped, and never blocks discovery of the other providers.
 
 See [Building a Hermes Plugin](./plugins/index.md#distribute-via-pip) for the full entry-points setup.
 
