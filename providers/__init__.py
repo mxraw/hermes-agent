@@ -699,6 +699,27 @@ def plugin_load_error(plugin: str) -> str:
     return _home_layer().errors.get(plugin, "")
 
 
+def _classified_entrypoint_kind(ep) -> str | None:
+    """Import-free kind of an entry point, or None when its source cannot be read.
+
+    None keeps the load-then-inspect path so an unreadable wheel can still register.
+    A readable non-provider must not be imported: ``hermes_agent.plugins`` is shared
+    with memory providers and every other plugin, and ``ep.load()`` is the tax.
+    """
+    value = getattr(ep, "value", None)
+    if not value:
+        return None
+    module_name = str(value).split(":", 1)[0].strip()
+    if not module_name:
+        return None
+    from hermes_cli.plugins_manifest import _detect_kind_from_source, _resolve_module_source
+
+    source = _resolve_module_source(module_name)
+    if not source:
+        return None
+    return _detect_kind_from_source(source) or "standalone"
+
+
 def _discover_entry_point_providers() -> None:
     """Import pip-installed provider plugins via the ``hermes_agent.plugins``
     entry-point group so they self-register.
@@ -721,9 +742,11 @@ def _discover_entry_point_providers() -> None:
       because it is installed. An entry point whose name is not enabled is
       skipped without loading.
     * **Provider targets only.** The ``hermes_agent.plugins`` group is shared
-      with general plugins whose target is ``register(ctx)``. Callables that
-      require arguments are skipped here (the PluginManager owns them);
-      provider registration hooks take no arguments by contract.
+      with every other plugin. A target whose source is readable and is not a
+      model provider is not imported — loading it just to notice that
+      ``register(ctx)`` takes an argument is what taxes every enabled plugin.
+      An unreadable target still loads, then a callable that requires
+      arguments is left to the PluginManager; provider hooks take no arguments.
 
     Failures are swallowed per-entry (a broken third-party package must not
     break provider discovery) and logged at warning level. This scan runs
@@ -771,6 +794,15 @@ def _discover_entry_point_providers() -> None:
         refusal = in_process_import_refusal(f"pip-installed model-provider plugin {ep.name!r}")
         if refusal:
             logger.warning("%s", refusal)
+            continue
+        kind = _classified_entrypoint_kind(ep)
+        if kind is not None and kind != "model-provider":
+            logger.debug(
+                "entry-point %r skipped by provider scan: kind %s "
+                "(not a model provider)",
+                ep.name,
+                kind,
+            )
             continue
         try:
             loaded = ep.load()

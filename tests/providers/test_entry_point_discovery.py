@@ -151,6 +151,108 @@ def test_entry_point_disabled_wins_over_enabled(monkeypatch):
         _clear_provider_caches()
 
 
+def test_enabled_non_provider_entry_point_is_not_imported(tmp_path, monkeypatch):
+    """Any enabled non-provider in the shared group must not be imported.
+
+    Provider discovery used to ``ep.load()`` every ``plugins.enabled`` entry point and only
+    afterwards notice that ``register(ctx)`` was not a provider hook. The import itself is the
+    tax — a memory provider, a platform adapter, or any other plugin. Classification has to
+    happen from source, before load.
+    """
+    marker = tmp_path / "imported"
+    module_name = "ep_tax_any_plugin"
+    (tmp_path / f"{module_name}.py").write_text(
+        "from pathlib import Path\n"
+        f"Path({str(marker)!r}).write_text('imported')\n"
+        "def register(ctx):\n"
+        "    raise AssertionError('provider scan must not call a general plugin')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    sys.modules.pop(module_name, None)
+
+    from importlib.metadata import EntryPoint
+
+    ep = EntryPoint(name="any-plugin", value=f"{module_name}:register", group="hermes_agent.plugins")
+    import importlib.metadata as md
+
+    monkeypatch.setattr(md, "entry_points", lambda: _FakeEntryPoints([ep]))
+    _enable(monkeypatch, "any-plugin")
+    _clear_provider_caches()
+    try:
+        providers._discover_providers()
+        assert module_name not in sys.modules
+        assert not marker.exists()
+    finally:
+        sys.modules.pop(module_name, None)
+        _clear_provider_caches()
+
+
+def test_model_provider_entry_point_still_loads(tmp_path, monkeypatch):
+    """A readable model-provider target is still imported and invoked."""
+    module_name = "ep_tax_provider_plugin"
+    (tmp_path / f"{module_name}.py").write_text(
+        "from providers.base import ProviderProfile\n"
+        "import providers\n"
+        "def register():\n"
+        "    providers.register_provider(ProviderProfile(\n"
+        "        name='ep-tax-provider', base_url='https://tax.test/v1'))\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    sys.modules.pop(module_name, None)
+
+    from importlib.metadata import EntryPoint
+
+    ep = EntryPoint(name="ep-tax-provider", value=f"{module_name}:register", group="hermes_agent.plugins")
+    import importlib.metadata as md
+
+    monkeypatch.setattr(md, "entry_points", lambda: _FakeEntryPoints([ep]))
+    _enable(monkeypatch, "ep-tax-provider")
+    _clear_provider_caches()
+    try:
+        assert providers.get_provider_profile("ep-tax-provider") is not None
+        assert module_name in sys.modules
+    finally:
+        sys.modules.pop(module_name, None)
+        _clear_provider_caches()
+
+
+def test_memory_shaped_entry_point_is_not_imported(tmp_path, monkeypatch):
+    """A memory provider shipped in the shared group is not imported either."""
+    marker = tmp_path / "memory-imported"
+    module_name = "ep_tax_memory_plugin"
+    (tmp_path / f"{module_name}.py").write_text(
+        "from pathlib import Path\n"
+        f"Path({str(marker)!r}).write_text('imported')\n"
+        "def register_memory_provider(provider):\n"
+        "    return provider\n"
+        "class MemoryProvider:\n"
+        "    pass\n"
+        "def register():\n"
+        "    raise AssertionError('provider scan must not call a memory plugin')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    sys.modules.pop(module_name, None)
+
+    from importlib.metadata import EntryPoint
+
+    ep = EntryPoint(name="any-memory", value=f"{module_name}:register", group="hermes_agent.plugins")
+    import importlib.metadata as md
+
+    monkeypatch.setattr(md, "entry_points", lambda: _FakeEntryPoints([ep]))
+    _enable(monkeypatch, "any-memory")
+    _clear_provider_caches()
+    try:
+        providers._discover_providers()
+        assert module_name not in sys.modules
+        assert not marker.exists()
+    finally:
+        sys.modules.pop(module_name, None)
+        _clear_provider_caches()
+
+
 def test_general_plugin_register_ctx_not_invoked(monkeypatch):
     """A register(ctx)-style general plugin sharing the group is never called."""
     calls = []
