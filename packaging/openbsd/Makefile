@@ -4,7 +4,7 @@ DISTNAME =		hermes-agent-0.0.0
 PKGNAME =		hermes-agent-0.0.0
 
 # First package omitted the share tree. Same DISTNAME, different contents.
-REVISION =		5
+REVISION =		6
 
 CATEGORIES =		misc
 
