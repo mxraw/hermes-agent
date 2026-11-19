@@ -4,7 +4,7 @@ DISTNAME =		hermes-agent-0.0.0
 PKGNAME =		hermes-agent-0.0.0
 
 # First package omitted the share tree. Same DISTNAME, different contents.
-REVISION =		6
+REVISION =		7
 
 CATEGORIES =		misc
 
@@ -76,6 +76,7 @@ RUN_DEPENDS =		shells/bash \
 			textproc/py-ruamel.yaml \
 			textproc/py-snowballstemmer \
 			textproc/py-tomli_w \
+			www/py-aiohttp \
 			www/py-fastapi \
 			www/py-httptools \
 			www/py-httpx \
